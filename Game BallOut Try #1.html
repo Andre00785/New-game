@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>Game BallOut Try #1</title>
+    <style>* { padding: 0; margin: 0; } canvas { background: #ddd; display: block; margin: 0 auto; }</style>
+</head>
+<body>
+
+<canvas id="myCanv" width="430" height="450"></canvas>
+
+<script>
+    var canvas = document.getElementById("myCanv");
+    var ctx = canvas.getContext("2d");
+    var rightPressed = false;
+    var leftPressed = false;
+    var x = canvas.width/2;
+    var y = canvas.height/2;
+    var dx = 2;
+    var dy = -2;
+    var score = 0;
+    var lives = 3;
+    var wallsize = 10;
+    var ballRadius = wallsize/2;
+    var wallcnt = 40;
+    var wallofx = 10;
+    var wallofy = 30;
+    var doorcnt = 20;
+    var doorsize = 20;
+    var wall = [];
+    for(var c=0; c<wallcnt*4; c++) { //fill solid wall
+        wall[c] = { x: 0, y: 0, st: 1 };
+    }
+    for(var c=0; c<doorcnt; c++) { // randomly make doors
+        var pos = Math.floor(Math.random() * wallcnt * 4);
+        for(var d=0; d<Math.floor(Math.random()*doorsize); d++) {
+           if(pos + d == wallcnt * 4){
+               pos = -d;
+           }
+           wall[pos+d] = { x: 0, y: 0, st: 0 };
+        }
+    }
+
+    document.addEventListener("keydown", keyDownHandler, false);
+    document.addEventListener("keyup", keyUpHandler, false);
+
+    function keyDownHandler(e) {
+        if(e.code  == "ArrowRight") {
+            rightPressed = true;
+	        }
+        else if(e.code == 'ArrowLeft') {
+            leftPressed = true;
+        }
+    }
+    function keyUpHandler(e) {
+        if(e.code == 'ArrowRight') {
+            rightPressed = false;
+        }
+        else if(e.code == 'ArrowLeft') {
+            leftPressed = false;
+        }
+    }
+
+    function drawWalls() {
+        for(var c=0; c<wallcnt; c++) {
+ //top wall
+            var wx = (c*wallsize)+wallofx;
+            var wy = wallofy;
+            wall[c].x = wx;
+            wall[c].y = wy;
+            if(wall[c].st == 1) {
+                ctx.beginPath();
+                ctx.rect(wx, wy, wallsize-1, wallsize-1);
+                ctx.fillStyle = "#000080";
+                ctx.fill();
+                ctx.closePath();
+            }
+//right wall
+            wx = (wallcnt*wallsize)+wallofx;
+            wy = (c*wallsize)+wallofy;
+            wall[c+wallcnt].x = wx;
+            wall[c+wallcnt].y = wy;
+            if(wall[c+wallcnt].st == 1) { 
+                ctx.beginPath();
+                ctx.rect(wx, wy, wallsize-1, wallsize-1);
+                ctx.fillStyle = "#000080";
+                ctx.fill();
+                ctx.closePath();
+            }
+//down wall
+            wx = (wallcnt*wallsize)-(c*wallsize)+wallofx;
+            wy = (wallcnt*wallsize)+wallofy;
+            wall[c+(wallcnt*2)].x = wx;
+            wall[c+(wallcnt*2)].y = wy;
+            if(wall[c+(wallcnt*2)].st == 1) { 
+                ctx.beginPath();
+                ctx.rect(wx, wy, wallsize-1, wallsize-1);
+                ctx.fillStyle = "#000080";
+                ctx.fill();
+                ctx.closePath();
+            }
+// left wall
+            wx = wallofx;
+            wy = (wallcnt*wallsize)-(c*wallsize)+wallofy;
+            wall[c+(wallcnt*3)].x = wx;
+            wall[c+(wallcnt*3)].y = wy;
+            if(wall[c+(wallcnt*3)].st == 1) { 
+                ctx.beginPath();
+                ctx.rect(wx, wy, wallsize-1, wallsize-1);
+                ctx.fillStyle = "#000080";
+                ctx.fill();
+                ctx.closePath();
+            }
+        }
+    }
+
+    function drawBall() {
+        ctx.beginPath();
+        ctx.arc(x, y, ballRadius, 0, Math.PI*2);
+        ctx.fillStyle = "#ffffff";
+        ctx.fill();
+        ctx.closePath();
+    }
+
+    function drawScore() {
+        ctx.font = "16px Arial";
+        ctx.fillStyle = "#00a00f";
+        ctx.fillText("Score: "+score, 8, 20);
+    }
+
+    function drawLives() {
+        ctx.font = "16px Arial";
+        ctx.fillStyle = "#f0000f";
+        ctx.fillText("Lives: "+lives, canvas.width-75, 20);
+    }
+
+    function draw() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        drawWalls();
+        drawBall();
+        drawScore();
+        drawLives();
+
+// moving logic
+    if(x+dx>wallsize*wallcnt+wallofx || x+dx<wallsize+wallofx || y+dy<wallsize+wallofy || y+dy>wallsize*wallcnt+wallofy){
+
+        for(var f=0; f<wallcnt*4; f++) { //scan all wall blocks
+            var b=wall[f];
+            if(b.x<x+dx && x+dx<b.x+wallsize && b.y<y+dy && y+dy<b.y+wallsize){ // ball inside wall[f]
+                if(b.st==1){ //wall - back off
+                   if(x+dx<wallsize+wallofx || x+dx>wallsize*wallcnt+wallofx){
+                      if(dx<0){ dx = 1.5+Math.random(); }
+                      else{ dx = -1.5-Math.random(); }
+                      score++;
+                   }
+                   if(y+dy<wallsize+wallofy || y+dy>wallsize*wallcnt+wallofy){
+                      if(dy<0){ dy = 1.5+Math.random(); }
+                      else{ dy = -1.5-Math.random(); }
+                      score++;
+                   }
+                   if(score == 100) {
+                      alert("YOU WIN !");
+                      document.location.reload();
+                   }
+                }else{ // door -> lives--
+                   lives--;
+                   if(!lives) {
+                      alert("GAME OVER");
+                      document.location.reload();
+                   }
+                   else {
+                      x = canvas.width/2;
+                      y = canvas.height/2;
+                      dx = 2;
+                      dy = -2;
+                   }
+				
+				}
+            }
+        }
+/*
+console.log(b.x+"_"+b.y+"_"+b.st);		   
+ctx.fillText("X:"+db+"_"+dbc, 200, 20);
+*/
+
+   }
+
+//keys reaction
+        if(rightPressed) {  // rotate wall clockwize
+           var sav=wall[(wallcnt*4)-1];
+           for(var c=wallcnt*4; c>1; c--) {
+              wall[c-1] = wall[c-2];
+           }
+           wall[0]=sav;
+        }
+        else if(leftPressed) {   // rotate wall counter clockwize
+           var sav=wall[0];
+           for(var c=0; c<(wallcnt*4)-1; c++) {
+              wall[c] = wall[c+1];
+           }
+           wall[(wallcnt*4)-1]=sav;
+        }
+
+//ball moving
+        x += dx;
+        y += dy;
+        requestAnimationFrame(draw);
+    }
+
+    draw();
+
+</script>
+</body>
+</html>
